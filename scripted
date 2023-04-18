@@ -1,0 +1,23 @@
+node{
+     echo "Jobe name is :${env.JOB_NAME}"
+    properties([[$class: 'JobLocalConfiguration', changeReasonComment: ''], pipelineTriggers([pollSCM('* * * * *')])])
+    def mavenhome = tool name: 'maven3.9.1'
+     
+    stage('from git'){
+    git branch: 'development', credentialsId: 'ded78dcd-7903-4547-9113-250c91928545', url: 'https://github.com/manojprabhakar25/maven-web-application.git'
+    }
+    stage('maven build'){
+ sh "${mavenhome}/bin/mvn package"
+    }
+    stage('sonar report'){
+sh "${mavenhome}/bin/mvn sonar:sonar"
+    }
+    stage('nexus repo'){
+sh "${mavenhome}/bin/mvn deploy"
+    }
+    stage('tomcat'){
+    sshagent(['536c5656-dc72-4f1b-af48-8d1635f67a90']){
+   sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@43.205.192.235:/opt/apache-tomcat-9.0.73/webapps/"
+    }
+    }
+}
